@@ -18,9 +18,6 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (rank == 0)
-	MPI_Wtime(); // start timer
-
     int D = atoi(argv[1]); // NOTE: input to program
     int N = pow(2,D);
     int n = N/size; // local size
@@ -29,27 +26,24 @@ int main(int argc, char **argv) {
 
     assert(isPowerOfTwo(N) && isPowerOfTwo(size));
 
-    complex x[N]; // store big array on rank 0
+    complex *x;
     complex *res;
     complex y[n];
     complex y_recv[n];
+    double t0;
 
     if (rank == 0) { // only allocate memory for big arrays on master
 	res = (complex *)malloc(N*sizeof(complex));
-	//x = (complex *)malloc(N*sizeof(complex));
+	x = (complex *)malloc(N*sizeof(complex));
     }
  
     srandom(123);
 
-    ///*
-    for (int i=0; i<N; i++)
-	x[i] = ((float)random())/(RAND_MAX);
-
-
-    //NOTE: temporary code below
     for (int i=0; i<n; i++)
-	y[i] = x[rank*n + i]; // initialize result list y
-    //*/
+	y[i] = ((float)random())/(RAND_MAX);
+    
+    if (rank == 0)
+	t0 = MPI_Wtime(); // start timer
 
     const complex w_N = cexp(-2i*PI/N);
     complex wk;
@@ -144,29 +138,16 @@ int main(int argc, char **argv) {
 
     // algorithm finished
     if (rank == 0) {
-	double t =  MPI_Wtime(); 
+	double time =  MPI_Wtime() - t0; 
 	char filename[50];
 	sprintf(filename, "results/%d.txt", N);
 
-	// verification
-
-	bit_reverse_list(res,N);
-
-	// perform seq fft on original input to compare results
-	seq_fft(x, x, N);
-	//seq_fft_proc(x, 0, 1, n, N, twiddle_factors);
-	//bit_reverse_list(x,N);
-
-	float SS_res = 0;
-	for (int i=0; i<N; i++)
-	    SS_res += pow(crealf(x[i]-res[i]),2) + pow(cimagf(x[i]-res[i]),2);
-
 	FILE *fp; // append execution time to file
 	fp = fopen(filename, "a");
-	fprintf(fp, "%d %d %f %f\n", N, size, t, SS_res);
+	fprintf(fp, "%d %d %f\n", N, size, time);
 	fclose(fp);
 
-	printf("N = %d, P = %d, Time = %f, Error = %f\n", N,size,t,SS_res);
+	printf("t = %f, P = %d, N = %d\n", time,size,N);
     }
     MPI_Finalize();
 
