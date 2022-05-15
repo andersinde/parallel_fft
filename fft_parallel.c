@@ -8,6 +8,15 @@
 #include "functions.h"
 
 #define PRINT 0
+//#define D 20
+//#define N 1048576
+
+
+/*  compilation on dardel:
+ *
+ * cc -o program fft_parallel.c functions.c -lm -w -O
+ *
+ */
 
 int main(int argc, char **argv) {
 
@@ -26,8 +35,8 @@ int main(int argc, char **argv) {
 
     assert(isPowerOfTwo(N) && isPowerOfTwo(size));
 
-    complex *x;
-    complex *res;
+    static complex *x;
+    static complex *res;
     complex y[n];
     complex y_recv[n];
     double t0;
@@ -48,10 +57,15 @@ int main(int argc, char **argv) {
     const complex w_N = cexp(-2i*PI/N);
     complex wk;
 
-    complex twiddle_factors[N/2]; // is it necessary to init whole array on every processor?
+
+    static complex *twiddle_factors;
+    /*
+
+    twiddle_factors = (complex *)malloc((N/2)*sizeof(complex));
 
     for (int i=0; i<N/2; i++)
 	twiddle_factors[i] = cpow(w_N, i);
+     */
 
     /*
 	ALT1
@@ -62,15 +76,7 @@ int main(int argc, char **argv) {
     ALT2
     exponent = get_exponent(d, k_global, N);
     wk = cpow(w_N, exponent);
-    int exponent = get_exponent(d, k, N);
-    wk = cpow(w_N, exponent);
      */
-
-    //char filename[8+2];
-    //sprintf(filename, "log/%d.txt", rank);
-    //FILE *file  = fopen(filename, "w");
-    //if (file == NULL) printf("Error. Could not open file\n"); 
-
 
     /*
      * FFT algorithm, log(N) steps
@@ -107,10 +113,11 @@ int main(int argc, char **argv) {
 	    // add received list to current
 	    for (int k = 0; k<n; k++) {
 		k_global = rank*n + k;
-		exponent = get_exponent(d, k_global, N); // todo: lookup table
-		int sign = exponent < N/2 ? 1 : -1;
-		//wk = twiddle_factors[exponent];
-		wk = sign*twiddle_factors[exponent%(N/2)];
+		//exponent = get_exponent(d, k_global, N); // todo: lookup table
+		//int sign = exponent < N/2 ? 1 : -1;
+		//wk = sign*twiddle_factors[exponent%(N/2)];
+		exponent = get_exponent(d, k_global, N);
+		wk = cpow(w_N, exponent);
 		y[k] = wk*y[k] +    y_recv[k];
 	    }
 	} else {
@@ -120,10 +127,11 @@ int main(int argc, char **argv) {
 	    // add received list to current
 	    for (int k = 0; k<n; k++) {
 		k_global = rank*n + k;
-		exponent = get_exponent(d, k_global, N); // todo: lookup table
-		int sign = exponent < N/2 ? 1 : -1;
-		//wk = twiddle_factors[exponent];
-		wk = sign*twiddle_factors[exponent%(N/2)];
+		//exponent = get_exponent(d, k_global, N); // todo: lookup table
+		//int sign = exponent < N/2 ? 1 : -1;
+		//wk = sign*twiddle_factors[exponent%(N/2)];
+		exponent = get_exponent(d, k_global, N);
+		wk = cpow(w_N, exponent);
 		y[k] =    y[k] + wk*y_recv[k];
 	    }
 	}
@@ -134,21 +142,26 @@ int main(int argc, char **argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    MPI_Gather(y, 2*n, MPI_COMPLEX, res, 2*n, MPI_COMPLEX, 0, MPI_COMM_WORLD);
+    //MPI_Gather(y, 2*n, MPI_COMPLEX, res, 2*n, MPI_COMPLEX, 0, MPI_COMM_WORLD);
 
     // algorithm finished
     if (rank == 0) {
 	double time =  MPI_Wtime() - t0; 
 	char filename[50];
-	sprintf(filename, "results/%d.txt", N);
+	sprintf(filename, "results/%dD.txt", D);
 
 	FILE *fp; // append execution time to file
 	fp = fopen(filename, "a");
-	fprintf(fp, "%d %d %f\n", N, size, time);
+	fprintf(fp, "%f %d %d\n", time, size, N);
 	fclose(fp);
 
 	printf("t = %f, P = %d, N = %d\n", time,size,N);
+//	free(res);
+//	free(x);
     }
+//    free(y);
+ //   free(y_recv);
+  //  free(twiddle_factors);
     MPI_Finalize();
 
     return 0;

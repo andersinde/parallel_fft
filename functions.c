@@ -134,10 +134,11 @@ void seq_fft_proc(complex *y, int rank, int size, int n, int N, complex *twiddle
 	    // get twiddle factor, NOTE, need to use global k since this
 	    // is a part of a larger list
 	    k_global = rank*n + k;
+	    //exponent = get_exponent(d, k_global, N);
+	    //int sign = exponent < N/2 ? 1 : -1;
+	    //wk = sign*twiddle_factors[exponent%(N/2)];
 	    exponent = get_exponent(d, k_global, N);
-	    int sign = exponent < N/2 ? 1 : -1;
-	    //wk = twiddle_factors[exponent];
-	    wk = sign*twiddle_factors[exponent%(N/2)];
+	    wk = cpow(w_N, exponent);
 
 	    // figure out which term should be multiplied by w
 	    //(num >> n) & 1); returns the n'th bit of num
