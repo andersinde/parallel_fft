@@ -59,24 +59,6 @@ int main(int argc, char **argv) {
 
 
     static complex *twiddle_factors;
-    /*
-
-    twiddle_factors = (complex *)malloc((N/2)*sizeof(complex));
-
-    for (int i=0; i<N/2; i++)
-	twiddle_factors[i] = cpow(w_N, i);
-     */
-
-    /*
-	ALT1
-    exponent = get_exponent(d, k_global, N);
-    int sign = exponent < N/2 ? 1 : -1;
-    wk = sign*twiddle_factors[exponent%(N/2)];
-
-    ALT2
-    exponent = get_exponent(d, k_global, N);
-    wk = cpow(w_N, exponent);
-     */
 
     /*
      * FFT algorithm, log(N) steps
