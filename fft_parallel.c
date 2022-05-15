@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //MPI_Gather(y, 2*n, MPI_COMPLEX, res, 2*n, MPI_COMPLEX, 0, MPI_COMM_WORLD);
+    MPI_Gather(y, 2*n, MPI_COMPLEX, res, 2*n, MPI_COMPLEX, 0, MPI_COMM_WORLD);
 
     // algorithm finished
     if (rank == 0) {
@@ -156,14 +156,8 @@ int main(int argc, char **argv) {
 	fclose(fp);
 
 	printf("t = %f, P = %d, N = %d\n", time,size,N);
-//	free(res);
-//	free(x);
     }
-//    free(y);
- //   free(y_recv);
-  //  free(twiddle_factors);
     MPI_Finalize();
-
     return 0;
 }
 
